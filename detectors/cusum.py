@@ -5,7 +5,7 @@ CUSUM (Cumulative Sum) change point detector.
 
 One of the oldest and most reliable algorithms for detecting
 shifts in a signal's mean. Originally developed for industrial
-quality control in the 1950s — still competitive today for
+quality control in the 1950s  -  still competitive today for
 this type of problem.
 
 The idea: accumulate deviations from a reference value.
@@ -34,8 +34,8 @@ class CUSUM(StreamDetector):
     Args:
         threshold: alarm threshold (H in the literature)
         slack: allowable deviation before accumulation starts (k)
-        mu: expected mean — if None, estimated from warm-up samples
-        sigma: expected std — if None, estimated from warm-up samples
+        mu: expected mean  -  if None, estimated from warm-up samples
+        sigma: expected std  -  if None, estimated from warm-up samples
         warmup_samples: number of samples to use for parameter estimation
     """
 
@@ -95,7 +95,7 @@ class CUSUM(StreamDetector):
         score = max(self._cusum_pos, self._cusum_neg)
         is_anomaly = score > self.threshold
 
-        # reset after alarm (optional — some implementations keep accumulating)
+        # reset after alarm (optional  -  some implementations keep accumulating)
         if is_anomaly:
             self._cusum_pos = 0.0
             self._cusum_neg = 0.0
@@ -127,7 +127,7 @@ class AdaptiveCUSUM(CUSUM):
     moving average of non-anomalous samples. This lets the detector
     track slow drifts in the baseline without flagging them as anomalies.
 
-    Not always the right call — if you WANT to detect slow drifts,
+    Not always the right call  -  if you WANT to detect slow drifts,
     use the regular CUSUM. This variant is for when you only care
     about sudden changes on top of a shifting baseline.
     """

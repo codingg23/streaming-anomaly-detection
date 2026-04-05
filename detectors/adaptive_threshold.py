@@ -8,7 +8,7 @@ monitoring use cases. No training, no parameters to tune beyond k,
 handles non-stationary signals reasonably well.
 
 Uses MAD (Median Absolute Deviation) instead of standard deviation
-for the rolling spread estimate — much more robust to outliers.
+for the rolling spread estimate  -  much more robust to outliers.
 The problem with rolling std is that anomalies inflate it, which
 raises the threshold right when you need it most. MAD doesn't do that.
 

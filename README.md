@@ -2,11 +2,11 @@
 
 Online anomaly detection algorithms for high-frequency time-series data. Designed to run continuously on streaming sensor data with low latency and no retraining.
 
-Built this because most anomaly detection libraries assume you have all your data upfront. In practice, sensor streams never stop — you need algorithms that update their model incrementally as new data arrives and flag anomalies in real time.
+Built this because most anomaly detection libraries assume you have all your data upfront. In practice, sensor streams never stop - you need algorithms that update their model incrementally as data arrives and flag anomalies in real time.
 
 ## Overview
 
-Four algorithms implemented, each with different trade-offs:
+Four algorithms, each with different trade-offs:
 
 | Algorithm | Latency | Memory | Works well for |
 |---|---|---|---|
@@ -15,23 +15,23 @@ Four algorithms implemented, each with different trade-offs:
 | LSTM Autoencoder | ~20ms | O(model) | Contextual / seasonal anomalies |
 | Adaptive Threshold | < 1ms | O(window) | Unknown distributions, fast setup |
 
-The right choice depends on your use case. For most sensor monitoring I'd start with Adaptive Threshold to get something running fast, then layer in the LSTM autoencoder once you have enough history.
+For most sensor monitoring I'd start with Adaptive Threshold to get something running quickly, then layer in the LSTM autoencoder once you have enough data to train on.
 
 ## Features
 
-- All detectors implement a common `StreamDetector` interface — easy to swap
+- All detectors implement a common `StreamDetector` interface - easy to swap between them
 - Windowed statistics updated incrementally (no recomputation from scratch)
 - Configurable sensitivity and alarm thresholds
-- Multi-stream support: run one detector per signal, or use multivariate detectors
+- Multi-stream support: run one detector per signal or use multivariate detectors
 - Evaluation tools: inject synthetic anomalies and measure precision/recall
-- Export alerts as structured JSON events
+- Alert export as structured JSON events
 
 ## Tech Stack
 
 - Python 3.11
 - NumPy / SciPy
-- PyTorch (LSTM autoencoder only)
-- `river` library for some streaming stats primitives
+- PyTorch (LSTM autoencoder)
+- `river` library for streaming stats primitives
 
 ## How to Run
 
@@ -46,19 +46,19 @@ python detect.py --data ./data/example_stream.csv --detector cusum --sensitivity
 # evaluate with injected anomalies
 python evaluate.py --data ./data/example_stream.csv --detector lstm_ae --inject-rate 0.02
 
-# run all detectors and compare
+# compare all detectors on the same data
 python benchmark.py --data ./data/example_stream.csv
 ```
 
 ## Algorithm Notes
 
-**CUSUM** is the workhorse — almost no compute, catches mean shifts within a few samples. The trick is setting the reference value and slack parameter correctly, which depends on your expected change magnitude. I added an adaptive variant that estimates these from a warm-up window.
+**CUSUM** is the workhorse - almost no compute, catches mean shifts within a few samples. The main challenge is setting the reference value and slack parameter correctly. Added an adaptive variant that estimates these from a warm-up window when you don't know the baseline.
 
-**Streaming Isolation Forest** extends the original iForest to a sliding window. Anomaly score is based on average path length in random trees, same as the batch version. The main challenge is efficiently updating trees as old points leave the window — current implementation rebuilds periodically (a TODO to do this properly incrementally).
+**Streaming Isolation Forest** extends the original iForest to a sliding window. Anomaly score is based on average path length in random trees, same as the batch version. Current implementation rebuilds trees periodically - a proper incremental update is a TODO.
 
-**LSTM Autoencoder** is the most powerful but slowest. Train it on normal data, flag samples where reconstruction error exceeds a threshold. Good at catching anomalies that are only anomalous in context (e.g. temperature reading that's fine in isolation but wrong given recent history).
+**LSTM Autoencoder** is the most accurate but slowest. Train it on normal data, flag samples where reconstruction error exceeds a calibrated threshold. Catches anomalies that are only anomalous in context (e.g. a temperature reading that's fine in isolation but wrong given the last hour of history).
 
-**Adaptive Threshold** is the simplest thing that actually works: rolling mean ± k * rolling std, with the std estimated robustly using MAD. Handles non-stationary signals surprisingly well.
+**Adaptive Threshold** is the simplest thing that actually works: rolling median +/- k times rolling spread, with spread estimated using MAD instead of std. MAD doesn't get inflated by the anomalies themselves, which is the key advantage over a simple rolling z-score.
 
 ## Results / Learnings
 
@@ -71,15 +71,13 @@ On synthetic benchmarks with injected point and contextual anomalies:
 | Streaming iForest | 0.82 | 0.74 | 0.78 |
 | LSTM Autoencoder | 0.86 | 0.81 | 0.83 |
 
-The LSTM wins on F1 but the latency difference is real. For anything
-latency-sensitive (< 5ms budget), CUSUM or Adaptive Threshold is the answer.
+LSTM wins on F1 but the latency difference is real. For anything where you need sub-5ms response, CUSUM or Adaptive Threshold is the right call.
 
-Main lesson: precision matters more than recall for alerting systems.
-False positives kill operator trust faster than missed anomalies.
+Main lesson from using this on real sensor streams: precision matters more than recall for alerting. False positives destroy operator trust faster than missed anomalies.
 
 ## TODO
 
-- [ ] Proper incremental iForest (not periodic rebuild)
-- [ ] Multivariate CUSUM (currently univariate only)
+- [ ] Proper incremental iForest update (not periodic rebuild)
+- [ ] Multivariate CUSUM
 - [ ] Kafka/Flink integration for distributed streams
 - [ ] Anomaly correlation across multiple streams
