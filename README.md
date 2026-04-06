@@ -1,12 +1,12 @@
 # streaming-anomaly-detection
 
-Online anomaly detection algorithms for high-frequency time-series data. Designed to run continuously on streaming sensor data with low latency and no retraining.
+Online anomaly detection algorithms for high frequency time series data. Designed to run continuously on streaming sensor data with low latency and no retraining.
 
 Built this because most anomaly detection libraries assume you have all your data upfront. In practice, sensor streams never stop - you need algorithms that update their model incrementally as data arrives and flag anomalies in real time.
 
 ## Overview
 
-Four algorithms, each with different trade-offs:
+Four algorithms, each with different trade offs:
 
 | Algorithm | Latency | Memory | Works well for |
 |---|---|---|---|
@@ -22,7 +22,7 @@ For most sensor monitoring I'd start with Adaptive Threshold to get something ru
 - All detectors implement a common `StreamDetector` interface - easy to swap between them
 - Windowed statistics updated incrementally (no recomputation from scratch)
 - Configurable sensitivity and alarm thresholds
-- Multi-stream support: run one detector per signal or use multivariate detectors
+- Multi stream support: run one detector per signal or use multivariate detectors
 - Evaluation tools: inject synthetic anomalies and measure precision/recall
 - Alert export as structured JSON events
 
@@ -40,7 +40,7 @@ git clone https://github.com/codingg23/streaming-anomaly-detection
 cd streaming-anomaly-detection
 pip install -r requirements.txt
 
-# run on a CSV of time-series data
+# run on a CSV of time series data
 python detect.py --data ./data/example_stream.csv --detector cusum --sensitivity 3.0
 
 # evaluate with injected anomalies
